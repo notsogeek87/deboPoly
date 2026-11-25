@@ -2,7 +2,7 @@
 // groupée par collaborateur, ouverte volontairement sur J+3).
 // Usage : node tools/agenda-test/test-agenda.js   (Playwright + Chromium ; Kendo chargé depuis son CDN)
 // Vérifie : portrait → vue « agenda » standard ouverte sur aujourd'hui, plein écran SOUS le menu du site ;
-// bouton Filtres ↔ Agenda ; paysage → vue d'origine ; retour portrait → agenda.
+// flèches = ± 1 semaine, période visible, bouton Retour ; bouton Filtres ↔ Agenda ; paysage → vue d'origine ; retour portrait → agenda.
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -40,11 +40,21 @@ const shots = process.argv[2];
       width: Math.round(r.width),
       menuVisible: document.querySelector('.nav').getBoundingClientRect().bottom <= r.top,
       button: (document.getElementById('lp-agenda-toggle') || {}).textContent,
+      back: !!document.getElementById('lp-agenda-back'),
+      period: ((document.querySelector('.k-nav-current .k-sm-date-format') || {}).textContent || '').trim(),
+      periodVisible: !!(document.querySelector('.k-nav-current .k-sm-date-format') || {}).offsetWidth,
+      offset: Math.round((new Date(s.view().startDate()).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 864e5),
     };
   });
   const r = {};
   r.portrait = await state();
   if (shots) await p.screenshot({ path: path.join(shots, 'agenda.png') });
+  await p.click('.k-nav-next');
+  await p.waitForTimeout(800);
+  r.nextWeek = await state();
+  await p.click('.k-nav-prev');
+  await p.waitForTimeout(800);
+  r.prevWeek = await state();
   await p.tap('#lp-agenda-toggle');
   await p.waitForTimeout(600);
   r.filters = await state();
@@ -65,6 +75,8 @@ const shots = process.argv[2];
     errors.length === 0 &&
     r.portrait.view === 'agenda' && r.portrait.start && r.portrait.fixed && r.portrait.menuVisible &&
     r.portrait.width === 412 && r.portrait.tasks >= 2 && r.portrait.button === 'Filtres' &&
+    r.portrait.back && r.portrait.periodVisible && r.portrait.period.length > 0 &&
+    r.nextWeek.offset === 7 && r.prevWeek.offset === 0 &&
     !r.filters.fixed && r.filters.button === 'Agenda' &&
     r.back.fixed && r.back.menuVisible &&
     r.landscape.view === 'week' && !r.landscape.fixed &&

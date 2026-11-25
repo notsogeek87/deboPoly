@@ -72,7 +72,8 @@ Package `com.lielu.debopoly`. DI manuelle (`AppContainer`), Compose pour l'inter
   `UrlPolicy` (liste blanche, décisions de navigation, testée), `UserAgents`, `LexisWebView` +
   `WebSwipeRefreshLayout` (tirer pour actualiser seulement sur dépassement en haut), `ExternalLinks`.
   `res/raw/agenda_mobile.js` : en portrait, l'agenda (Kendo UI Scheduler) passe dans sa vue « agenda »
-  STANDARD, ouverte sur aujourd'hui, en position fixe sous le menu du site (bouton Filtres ↔ Agenda) ; ajout de
+  STANDARD, ouverte sur aujourd'hui, en position fixe sous le menu du site (bouton Filtres ↔ Agenda, bouton Retour = history.back()) ;
+  flèches = ± 7 jours via l'événement standard `navigate` (la vue liste glisse sinon d'un seul jour) ; ajout de
   la vue via l'API interne `_views()` si absente (repli : vue « jour »). Ne PAS dériver de vue Kendo maison :
   essayé en v1.0.14, aucune donnée affichée sur le vrai site.
   Test : `node tools/agenda-test/test-agenda.js` (maquette Kendo fr-FR + Playwright).

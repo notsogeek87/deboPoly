@@ -6,6 +6,7 @@
  * - vue « agenda » STANDARD de Kendo (liste des rendez-vous, regroupés par jour), ouverte sur aujourd'hui ;
  * - l'agenda occupe l'écran SOUS le menu du site (qui reste visible), par-dessus le panneau de filtres ;
  *   un bouton « Filtres » rend la page normale, « Agenda » y revient.
+ * Flèches : une semaine entière en vue liste ; période affichée dans la barre ; bouton « Retour ».
  * En paysage ou en version ordinateur, la vue d'origine revient. Tout se passe dans le navigateur : aucune
  * requête ajoutée ni modifiée.
  *
@@ -36,6 +37,13 @@
     "html.lp-agenda-narrow .k-scheduler-agendaview .k-scheduler-agendaday{font-size:26px!important;}" +
     "html.lp-agenda-narrow .k-scheduler-agendaview .k-scheduler-agendaweek," +
     "html.lp-agenda-narrow .k-scheduler-agendaview .k-scheduler-agendadate{font-size:12px!important;}" +
+    // Période affichée toujours visible dans la barre de l'agenda (Kendo la masque sur écran étroit).
+    "html.lp-agenda-narrow .k-scheduler-toolbar .k-nav-current{display:inline-flex!important;}" +
+    "html.lp-agenda-narrow .k-scheduler-toolbar .k-nav-current .k-lg-date-format{display:none!important;}" +
+    "html.lp-agenda-narrow .k-scheduler-toolbar .k-nav-current .k-sm-date-format{display:inline!important;" +
+    "font-weight:600;font-size:15px;}" +
+    "#lp-agenda-back{position:fixed;left:12px;bottom:16px;z-index:2147483001;border:0;border-radius:20px;" +
+    "padding:10px 16px;font:600 14px sans-serif;background:#fff;color:#1f3a5f;box-shadow:0 2px 8px rgba(0,0,0,.3);}" +
     "#lp-agenda-toggle{position:fixed;right:12px;bottom:16px;z-index:2147483001;border:0;border-radius:20px;" +
     "padding:10px 16px;font:600 14px sans-serif;background:#1f3a5f;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3);}";
 
@@ -117,6 +125,17 @@
       btn.style.display = isNarrow ? "" : "none";
       btn.textContent = full ? "Filtres" : "Agenda";
     }
+    // « Retour » : quitte l'agenda vers la page précédente du site (le menu est masqué en plein écran).
+    var back = document.getElementById("lp-agenda-back");
+    if (isNarrow && !back && document.body) {
+      back = document.createElement("button");
+      back.id = "lp-agenda-back";
+      back.type = "button";
+      back.textContent = "\u2190 Retour";
+      back.addEventListener("click", function () { history.back(); });
+      document.body.appendChild(back);
+    }
+    if (back) back.style.display = isNarrow ? "" : "none";
     // Kendo recalcule ses dimensions après le changement de taille du conteneur.
     if (s && typeof s.resize === "function") {
       try { s.resize(true); } catch (e) {}
@@ -128,6 +147,19 @@
     var s = widget();
     // Widget pas encore prêt (vues en cours de création) : on réessaie plus tard.
     if (!s || !s.view() || !s.views) return false;
+    if (!s.__lpNav) {
+      s.__lpNav = true;
+      // La vue liste montre 7 jours mais ses flèches n'avancent que d'un jour (fenêtre glissante, déroutant) :
+      // en vue liste, les flèches avancent d'une semaine entière. Événement standard de Kendo.
+      s.bind("navigate", function (e) {
+        if (!e || (e.action !== "next" && e.action !== "previous")) return;
+        if (!s.view() || s.view().name !== "agenda") return;
+        e.preventDefault();
+        var start = s.view().startDate();
+        var target = new Date(start.getFullYear(), start.getMonth(), start.getDate() + (e.action === "next" ? 7 : -7));
+        setTimeout(function () { s.date(target); }, 0);
+      });
+    }
     var current = s.view().name;
     var isNarrow = narrow();
     setLayout(isNarrow, s);
