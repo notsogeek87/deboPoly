@@ -3,6 +3,9 @@
 <link rel="stylesheet" href="https://kendo.cdn.telerik.com/2022.3.1109/styles/kendo.default-v2.min.css">
 <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 <script src="https://kendo.cdn.telerik.com/2022.3.1109/js/kendo.all.min.js"></script>
+<script src="https://kendo.cdn.telerik.com/2022.3.1109/js/cultures/kendo.culture.fr-FR.min.js"></script>
+<script src="https://kendo.cdn.telerik.com/2022.3.1109/js/messages/kendo.messages.fr-FR.min.js"></script>
+<script>kendo.culture("fr-FR");</script>
 <style>body{margin:0;font-family:sans-serif}.top{height:56px;background:#1f3a5f;color:#fff;padding:16px}
 .wrap{display:flex}.side{width:220px;flex:none;border-right:1px solid #ccc;padding:8px}.main{flex:1;min-width:0}</style>
 </head><body>
@@ -13,14 +16,16 @@
 var d = new Date(); d.setHours(0,0,0,0); var day = 864e5;
 function at(o,h,m){return new Date(d.getTime()+o*day+(h*60+m)*6e4);}
 $("#scheduler").kendoScheduler({
-  date: d, startTime: at(0,8,0), height: 700,
+  date: new Date(d.getTime() + 3*day), startTime: at(0,8,0), height: 700,
+  group: { resources: ["Owner"] },
+  resources: [{ field: "ownerId", name: "Owner", dataSource: [{ text: "MARTIN Paul", value: 1, color: "#5b9bd5" }] }],
   views: ["day", {type:"week", selected:true}, "month"],
   dataSource: [
-    {title:"Audience TJ Paris – RG 24/0001", start:at(0,9,30), end:at(0,11,0)},
-    {title:"RDV client – Société X", start:at(0,14,0), end:at(0,15,0)},
-    {title:"Expertise judiciaire", start:at(1,10,0), end:at(1,12,0)},
-    {title:"Délai conclusions", start:at(2,0,0), end:at(2,0,0), isAllDay:true},
-    {title:"Médiation", start:at(3,16,0), end:at(3,17,30)}
+    {title:"Audience TJ Paris – RG 24/0001", start:at(0,9,30), end:at(0,11,0), ownerId:1},
+    {title:"RDV client – Société X", start:at(0,14,0), end:at(0,15,0), ownerId:1},
+    {title:"Expertise judiciaire", start:at(1,10,0), end:at(1,12,0), ownerId:1},
+    {title:"Délai conclusions", start:at(2,0,0), end:at(2,0,0), isAllDay:true, ownerId:1},
+    {title:"Médiation", start:at(3,16,0), end:at(3,17,30), ownerId:1}
   ]
 });
 </script></body></html>

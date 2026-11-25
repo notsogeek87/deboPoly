@@ -131,8 +131,8 @@ fun SettingsScreen(
             SwitchRow(
                 title = "Agenda en liste sur téléphone",
                 subtitle =
-                    "En portrait, l'agenda s'affiche en liste des rendez-vous, en plein écran. Le bouton " +
-                        "« Filtres » ramène la page normale ; en paysage, la vue habituelle revient.",
+                    "En portrait, l'agenda affiche la liste des rendez-vous du jour, en commençant par " +
+                        "aujourd'hui (flèches : jour précédent / suivant). En paysage, la vue habituelle revient.",
                 checked = settings.agendaMobile,
                 onCheckedChange = viewModel::setAgendaMobile,
             )

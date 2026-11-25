@@ -71,9 +71,10 @@ Package `com.lielu.debopoly`. DI manuelle (`AppContainer`), Compose pour l'inter
 - `web/` — `BrowserController` (possède la WebView : réglages, clients, popups SSO, erreurs, effacement),
   `UrlPolicy` (liste blanche, décisions de navigation, testée), `UserAgents`, `LexisWebView` +
   `WebSwipeRefreshLayout` (tirer pour actualiser seulement sur dépassement en haut), `ExternalLinks`.
-  `res/raw/agenda_mobile.js` : agenda (Kendo UI Scheduler) en vue liste plein écran en portrait, injecté sur
-  les pages `/Agenda/` ; bascule de vue via l'API interne Kendo `_views()` si la vue « agenda » n'est pas
-  configurée (repli sur la vue « jour »). Test : `node tools/agenda-test/test-agenda.js` (maquette Kendo + Playwright).
+  `res/raw/agenda_mobile.js` : en portrait, l'agenda (Kendo UI Scheduler) passe en « liste du jour » ouverte
+  sur aujourd'hui — vue `kendo.ui.LpDayListView` dérivée d'`AgendaView` (endDate/_renderLayout/_tasks limités
+  à une journée), ajoutée via l'API interne `_views()` (repli : vue « jour ») ; menu du site conservé.
+  Test : `node tools/agenda-test/test-agenda.js` (maquette Kendo fr-FR + Playwright).
 - `download/` — `DownloadController` (DownloadManager + cookies ; `data:` ; `blob:` via
   `addWebMessageListener`), `DownloadStore` (espace privé, FileProvider), `FileNames`, `DataUrl`, `FileOpener`.
 - `security/` — `AppLock` (état de verrouillage du processus, testé), `BiometricGate` (BiometricPrompt).
