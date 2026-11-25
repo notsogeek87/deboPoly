@@ -1,6 +1,6 @@
-# Lexis Poly (app Android)
+# DeboPoly (app Android)
 
-App Android « coque » pour **Lexis Poly**, le logiciel web de LexisNexis pour les cabinets d'avocats. Elle affiche
+App Android « coque » **DeboPoly** pour **Lexis Poly**, le logiciel web de LexisNexis pour les cabinets d'avocats. Elle affiche
 **uniquement l'interface web officielle** (`https://www.lexispoly.fr/lexispoly/`) dans une WebView sécurisée :
 aucune API privée, aucun traitement des données du cabinet par l'app.
 
@@ -12,7 +12,7 @@ releases GitHub). La sauvegarde automatique du modèle est **retirée** : rien n
 
 ## Configuration
 
-Tout est dans [`app/src/main/java/com/lielu/lexispoly/config/AppConfig.kt`](app/src/main/java/com/lielu/lexispoly/config/AppConfig.kt).
+Tout est dans [`app/src/main/java/com/lielu/debopoly/config/AppConfig.kt`](app/src/main/java/com/lielu/debopoly/config/AppConfig.kt).
 
 | Constante | Rôle | Valeur livrée |
 | --- | --- | --- |
@@ -81,14 +81,21 @@ intégré), Kotlin 2.4.21, Gradle 9.9.2, androidx.webkit 1.18.0, androidx.biomet
 ### CI
 
 `.github/workflows/build.yml`, sur chaque push : ktlint → tests → `assembleRelease` → **`assembleDebug`, APK
-debug publiés en artefact** (`Lexis-Poly-debug-<branche>-<run>`, onglet *Actions* du run). Sur `main` /
+debug publiés en artefact** (`DeboPoly-debug-<branche>-<run>`, onglet *Actions* du run). Sur `main` /
 `staging`, l'APK release est en plus publié en release GitHub (convention du modèle).
 
 ### Signature
 
-Comme le modèle : keystore versionné `app/debug.keystore` par défaut, ou vraie clé via les secrets
-`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` (procédure habituelle). Changer de clé
-impose de désinstaller l'app une fois.
+Les APK release publiés (`main`, `staging`) sont signés par la **clé de publication DeboPoly**, fournie à la CI
+par les secrets `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` :
+
+- certificat : `CN=DeboPoly, O=Lielu, C=FR` (alias `debopoly`) ;
+- empreinte SHA-256 attendue :
+  `F8:03:F0:E0:90:7C:9E:35:B0:0F:1C:4B:9C:94:D6:3B:0B:58:DF:C5:BD:D8:ED:EE:7F:F4:3D:6F:57:5B:09:B2`.
+
+Vérifier un APK : `apksigner verify --print-certs <fichier.apk>`. Le keystore versionné `app/debug.keystore`
+(public, mots de passe `android`) ne sert plus qu'aux builds locaux et aux branches sans secrets. Perdre la clé ou
+en changer impose de désinstaller l'app une fois.
 
 ## Permissions
 

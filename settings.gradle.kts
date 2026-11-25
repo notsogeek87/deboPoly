@@ -20,5 +20,5 @@ dependencyResolutionManagement {
 }
 
 // Mis à jour par scripts/new-app.sh.
-rootProject.name = "LexisPoly"
+rootProject.name = "DeboPoly"
 include(":app")
