@@ -56,7 +56,8 @@ affiche « Ouvert dans le navigateur » avec le domaine en cause : c'est lui qu'
 - **Notifications** : le nom des documents n'apparaît pas dans la notification de téléchargement (écran de verrouillage).
 - **Aucun analytics, aucun SDK tiers, aucun log** d'URL ni de contenu. Seule dépendance hors AndroidX :
   `lielugit-updater` (bibliothèque maison du modèle), qui interroge l'API publique GitHub des releases de ce
-  dépôt, uniquement dans l'APK release `production`.
+  dépôt, uniquement dans l'APK release `production`. Le dépôt doit donc être **public** : l'app l'interroge
+  sans jeton, et un dépôt privé répond 404 (« Aucune version publiée trouvée »).
 - **Se déconnecter et effacer les données** (Réglages) : cookies, cache, WebStorage (localStorage, IndexedDB,
   Cache Storage…), formulaires, identifiants HTTP, historique, documents téléchargés et photos.
 

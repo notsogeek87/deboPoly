@@ -143,7 +143,8 @@ internal fun updateErrorMessage(
     when (error) {
         is UpdateError.NetworkError -> "Réseau indisponible. Réessayez plus tard."
         is UpdateError.RateLimit -> "Trop de requêtes vers GitHub. Réessayez plus tard."
-        UpdateError.ReleaseNotFound -> "Aucune version publiée trouvée."
+        // 404 : aucune release, ou dépôt GitHub privé (l'API publique ne le voit pas sans jeton).
+        UpdateError.ReleaseNotFound -> "Aucune version publiée trouvée (dépôt GitHub privé ou sans release)."
         is UpdateError.ApkNotFound -> "Aucun APK compatible dans la dernière version."
         UpdateError.InstallationNotAllowed -> "Autorisez l'installation d'applications inconnues pour $appName."
         else -> "La mise à jour a échoué : ${error.message}"
