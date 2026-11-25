@@ -34,7 +34,7 @@ fun signingValue(
 
 android {
     // Mis à jour par scripts/new-app.sh (avec le dossier de sources et applicationId).
-    namespace = "com.lielu.lexispoly"
+    namespace = "com.lielu.debopoly"
     // Compose 1.13 exige l'API 37.1 au moins : 37.2 (version mineure, syntaxe AGP 9).
     compileSdk {
         version =
@@ -44,7 +44,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.lielu.lexispoly"
+        applicationId = "com.lielu.debopoly"
         minSdk = 26
         targetSdk = 37
         versionCode = buildNumber

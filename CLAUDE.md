@@ -4,10 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Ce dépôt
 
-App Android « coque » WebView pour Lexis Poly (`https://www.lexispoly.fr/lexispoly/`), dérivée du modèle
+App Android « coque » WebView **DeboPoly** pour Lexis Poly (`https://www.lexispoly.fr/lexispoly/`), dérivée du modèle
 `lieluinit` (même Gradle/CI/scripts/mise à jour). La sauvegarde automatique du modèle a été RETIRÉE à dessein
 (données sous secret professionnel : `allowBackup="false"`, rien ne quitte l'appareil) — ne pas la réintroduire.
-Configuration (URL, liste blanche, SSO) : `config/AppConfig.kt`. Voir README pour le comportement et la sécurité.
+Nom de l'app : DeboPoly (`com.lielu.debopoly`). Configuration (URL, liste blanche, SSO) : `config/AppConfig.kt`. Voir README pour le comportement et la sécurité.
 
 Règles à ne jamais casser : pas d'`addJavascriptInterface`, `onReceivedSslError` → `cancel()`, pas de
 `Log` d'URL ni de contenu, pas de SDK tiers / analytics, FLAG_SECURE posé avant tout affichage.
@@ -18,7 +18,7 @@ Règles à ne jamais casser : pas d'`addJavascriptInterface`, `onReceivedSslErro
 ./gradlew ktlintCheck               # lint Kotlin (ktlint 1.3.1, échoue le build si violations)
 ./gradlew ktlintFormat              # auto-fix
 ./gradlew test                      # tests unitaires (staging + production)
-./gradlew testStagingDebugUnitTest --tests "com.lielu.lexispoly.web.UrlPolicyTest"   # un seul test
+./gradlew testStagingDebugUnitTest --tests "com.lielu.debopoly.web.UrlPolicyTest"   # un seul test
 ./gradlew assembleDebug             # APK debug (staging + production)
 ./gradlew assembleRelease           # APK release signés (staging + production)
 ```
@@ -58,13 +58,14 @@ uniquement, l'APK est ensuite publié :
 
 `<version>` = `<appVersionBase>.<run_number>` ; le run number est aussi le `versionCode` (`BUILD_NUMBER`), condition
 pour que la mise à jour intégrée voie la release comme plus récente. Une release **par build**, jamais un tag
-écrasé. Les APK sont signés avec le keystore versionné `app/debug.keystore` par défaut, ou avec les secrets
-`KEYSTORE_BASE64`/`KEYSTORE_PASSWORD`/`KEY_ALIAS`/`KEY_PASSWORD` s'ils existent (README, « Signature »).
+écrasé. Les releases sont signées par la clé de publication DeboPoly (secrets `KEYSTORE_BASE64`/`KEYSTORE_PASSWORD`/
+`KEY_ALIAS`/`KEY_PASSWORD`, `CN=DeboPoly`, empreinte SHA-256 `F8:03:F0:…:5B:09:B2`, README « Signature »).
+`app/debug.keystore` ne sert qu'aux builds locaux sans secrets.
 R8 est désactivé (`isMinifyEnabled = false`) : ne l'activer qu'après l'avoir testé sur un appareil.
 
 ## Architecture
 
-Package `com.lielu.lexispoly`. DI manuelle (`AppContainer`), Compose pour l'interface, Views pour la WebView.
+Package `com.lielu.debopoly`. DI manuelle (`AppContainer`), Compose pour l'interface, Views pour la WebView.
 
 - `config/AppConfig` — BASE_URL, domaines autorisés, SSO, délais de verrouillage.
 - `web/` — `BrowserController` (possède la WebView : réglages, clients, popups SSO, erreurs, effacement),
