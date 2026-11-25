@@ -1,8 +1,8 @@
 // Test du script agenda (app/src/main/res/raw/agenda_mobile.js) sur une maquette Kendo UI Scheduler (fr-FR,
 // groupée par collaborateur, ouverte volontairement sur J+3).
 // Usage : node tools/agenda-test/test-agenda.js   (Playwright + Chromium ; Kendo chargé depuis son CDN)
-// Vérifie : portrait → « liste du jour » sur AUJOURD'HUI, page non plein écran ; flèche → jour suivant ;
-// jour vide → message ; paysage → vue d'origine ; retour portrait → liste du jour.
+// Vérifie : portrait → vue « agenda » standard ouverte sur aujourd'hui, plein écran SOUS le menu du site ;
+// bouton Filtres ↔ Agenda ; paysage → vue d'origine ; retour portrait → agenda.
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -28,27 +28,30 @@ const shots = process.argv[2];
 
   const state = () => p.evaluate(() => {
     const s = window.jQuery('.k-scheduler').data('kendoScheduler');
-    const d = s.date();
+    const el = document.querySelector('.k-scheduler');
+    const r = el.getBoundingClientRect();
     const t = new Date();
     return {
-      view: s.view() instanceof window.kendo.ui.LpDayListView ? 'lpDayList' : s.view().name,
-      today: d.toDateString() === t.toDateString(),
-      offset: Math.round((new Date(d).setHours(0, 0, 0, 0) - new Date(t).setHours(0, 0, 0, 0)) / 864e5),
+      view: s.view().name,
+      start: s.view().startDate().toDateString() === t.toDateString(),
       tasks: document.querySelectorAll('.k-scheduler-content .k-task').length,
-      empty: !!document.querySelector('.lp-agenda-empty'),
-      title: (document.querySelector('.k-nav-current .k-sm-date-format') || {}).textContent,
-      fixed: getComputedStyle(document.querySelector('.k-scheduler')).position === 'fixed',
+      fixed: getComputedStyle(el).position === 'fixed',
+      top: Math.round(r.top),
+      width: Math.round(r.width),
+      menuVisible: document.querySelector('.nav').getBoundingClientRect().bottom <= r.top,
+      button: (document.getElementById('lp-agenda-toggle') || {}).textContent,
     };
   });
   const r = {};
   r.portrait = await state();
-  if (shots) await p.screenshot({ path: path.join(shots, 'jour.png') });
-  await p.click('.k-nav-next');
+  if (shots) await p.screenshot({ path: path.join(shots, 'agenda.png') });
+  await p.tap('#lp-agenda-toggle');
   await p.waitForTimeout(600);
-  r.next = await state();
-  for (let i = 0; i < 3; i++) { await p.click('.k-nav-next'); await p.waitForTimeout(400); }
-  r.emptyDay = await state();
-  if (shots) await p.screenshot({ path: path.join(shots, 'vide.png') });
+  r.filters = await state();
+  if (shots) await p.screenshot({ path: path.join(shots, 'filtres.png') });
+  await p.tap('#lp-agenda-toggle');
+  await p.waitForTimeout(600);
+  r.back = await state();
   await p.setViewportSize({ width: 915, height: 412 });
   await p.waitForTimeout(1200);
   r.landscape = await state();
@@ -60,11 +63,12 @@ const shots = process.argv[2];
 
   const ok =
     errors.length === 0 &&
-    r.portrait.view === 'lpDayList' && r.portrait.today && !r.portrait.fixed && r.portrait.tasks === 2 &&
-    r.next.view === 'lpDayList' && r.next.offset === 1 && r.next.tasks === 1 &&
-    r.emptyDay.tasks === 0 && r.emptyDay.empty &&
-    r.landscape.view === 'week' && !r.landscape.empty &&
-    r.portraitAgain.view === 'lpDayList';
+    r.portrait.view === 'agenda' && r.portrait.start && r.portrait.fixed && r.portrait.menuVisible &&
+    r.portrait.width === 412 && r.portrait.tasks >= 2 && r.portrait.button === 'Filtres' &&
+    !r.filters.fixed && r.filters.button === 'Agenda' &&
+    r.back.fixed && r.back.menuVisible &&
+    r.landscape.view === 'week' && !r.landscape.fixed &&
+    r.portraitAgain.view === 'agenda' && r.portraitAgain.fixed;
   console.log(ok ? 'OK' : 'ÉCHEC');
   process.exit(ok ? 0 : 1);
 })();

@@ -6,11 +6,14 @@
 <script src="https://kendo.cdn.telerik.com/2022.3.1109/js/cultures/kendo.culture.fr-FR.min.js"></script>
 <script src="https://kendo.cdn.telerik.com/2022.3.1109/js/messages/kendo.messages.fr-FR.min.js"></script>
 <script>kendo.culture("fr-FR");</script>
-<style>body{margin:0;font-family:sans-serif}.top{height:56px;background:#1f3a5f;color:#fff;padding:16px}
-.wrap{display:flex}.side{width:220px;flex:none;border-right:1px solid #ccc;padding:8px}.main{flex:1;min-width:0}</style>
+<style>body{margin:0;font-family:sans-serif}.top{height:60px;padding:16px;font-size:24px}
+.nav{height:56px;background:#eee;display:flex;gap:16px;align-items:center;padding:0 8px}.nav b{background:#f45;color:#fff;padding:16px}
+.band{height:40px;background:#eef4fb}.wrap{display:flex;margin:20px 8px;border:2px solid #7b3fa0;position:relative}
+.side{width:45%;flex:none;border-right:1px solid #ccc;padding:8px}.main{flex:1;min-width:0}</style>
 </head><body>
-<div class="top">Lexis Poly (maquette)</div>
-<div class="wrap"><div class="side"><div class="agendaFilterWrapper">Filtres : Me Martin, Me Durand</div></div>
+<div class="top">PolyOffice (maquette)</div>
+<div class="nav"><span>⌂</span><span>DONNÉES</span><b>AGENDA</b><span>TÂCHES</span></div><div class="band"></div>
+<div class="wrap"><div class="side"><div class="agendaFilterWrapper">Filtres : Me Martin<br><br>Tous codes<br><br>Amplitude 08:00 – 19:00<br><br><button>Appliquer</button></div></div>
 <div class="main"><div id="scheduler"></div></div></div>
 <script>
 var d = new Date(); d.setHours(0,0,0,0); var day = 864e5;

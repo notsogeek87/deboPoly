@@ -71,9 +71,10 @@ Package `com.lielu.debopoly`. DI manuelle (`AppContainer`), Compose pour l'inter
 - `web/` — `BrowserController` (possède la WebView : réglages, clients, popups SSO, erreurs, effacement),
   `UrlPolicy` (liste blanche, décisions de navigation, testée), `UserAgents`, `LexisWebView` +
   `WebSwipeRefreshLayout` (tirer pour actualiser seulement sur dépassement en haut), `ExternalLinks`.
-  `res/raw/agenda_mobile.js` : en portrait, l'agenda (Kendo UI Scheduler) passe en « liste du jour » ouverte
-  sur aujourd'hui — vue `kendo.ui.LpDayListView` dérivée d'`AgendaView` (endDate/_renderLayout/_tasks limités
-  à une journée), ajoutée via l'API interne `_views()` (repli : vue « jour ») ; menu du site conservé.
+  `res/raw/agenda_mobile.js` : en portrait, l'agenda (Kendo UI Scheduler) passe dans sa vue « agenda »
+  STANDARD, ouverte sur aujourd'hui, en position fixe sous le menu du site (bouton Filtres ↔ Agenda) ; ajout de
+  la vue via l'API interne `_views()` si absente (repli : vue « jour »). Ne PAS dériver de vue Kendo maison :
+  essayé en v1.0.14, aucune donnée affichée sur le vrai site.
   Test : `node tools/agenda-test/test-agenda.js` (maquette Kendo fr-FR + Playwright).
 - `download/` — `DownloadController` (DownloadManager + cookies ; `data:` ; `blob:` via
   `addWebMessageListener`), `DownloadStore` (espace privé, FileProvider), `FileNames`, `DataUrl`, `FileOpener`.
