@@ -5,7 +5,7 @@ App Android « coque » **DeboPoly** pour **Lexis Poly**, le logiciel web de Lex
 aucune API privée, aucun traitement des données du cabinet par l'app.
 
 > Application indépendante, non éditée par LexisNexis. « Lexis Poly » et « LexisNexis » sont des marques de
-> leurs propriétaires ; l'icône de l'app est volontairement neutre.
+> leurs propriétaires ; l'icône de l'app reprend le logo LexisNexis.
 
 Construite à partir du modèle `lieluinit` (Kotlin, Compose, même CI, même mise à jour intégrée depuis les
 releases GitHub). La sauvegarde automatique du modèle est **retirée** : rien ne doit quitter l'appareil.
