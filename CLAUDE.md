@@ -79,8 +79,9 @@ Package `com.lielu.debopoly`. DI manuelle (`AppContainer`), Compose pour l'inter
   la vue via l'API interne `_views()` si absente (repli : vue « jour »). Ne PAS dériver de vue Kendo maison :
   essayé en v1.0.14, aucune donnée affichée sur le vrai site.
   Test : `node tools/agenda-test/test-agenda.js` (maquette Kendo fr-FR + Playwright).
-- `download/` — `DownloadController` (DownloadManager + cookies ; `data:` ; `blob:` via
-  `addWebMessageListener`), `DownloadStore` (espace privé, FileProvider), `FileNames`, `DataUrl`, `FileOpener`.
+- `download/` — `DownloadController` (`https:`, `data:`, `blob:` via `addWebMessageListener`),
+  `HttpsDownload` (redirections et en-têtes de session), `DownloadStore` (espace privé, FileProvider),
+  `FileNames`, `DataUrl`, `FileOpener`.
 - `security/` — `AppLock` (état de verrouillage du processus, testé), `BiometricGate` (BiometricPrompt).
 - `data/settings` — DataStore : FLAG_SECURE, délai, user-agent, version ordinateur, assombrissement.
 - `ui/` — `main/MainScreen` (barre, WebView, panneaux erreur/verrouillage), `settings/` (activité séparée qui

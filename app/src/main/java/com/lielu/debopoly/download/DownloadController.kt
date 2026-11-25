@@ -1,15 +1,6 @@
 package com.lielu.debopoly.download
 
-import android.app.DownloadManager
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.os.Environment
-import android.webkit.CookieManager
 import android.webkit.WebView
-import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import androidx.webkit.WebMessageCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
@@ -21,24 +12,20 @@ import java.util.Base64
 
 /**
  * Téléchargements lancés par la page :
- * - `https:` → [DownloadManager], avec les cookies de session et le user-agent de la WebView (sinon le serveur
- *   répondrait par la page de connexion) ;
+ * - `https:` → transfert avec contrôle des redirections et des en-têtes de session ;
  * - `data:` → décodé localement ;
  * - `blob:` → l'URL n'existe que dans la page : un script la relit (fetch) et renvoie le contenu par morceaux
  *   via un canal `WebViewCompat.addWebMessageListener` limité aux domaines autorisés (pas d'
  *   `addJavascriptInterface`). Chaque transfert porte un jeton aléatoire : un message sans jeton connu est ignoré.
  *
- * Destination : stockage propre à l'app ([DownloadStore]). Le nom du fichier n'apparaît pas dans la notification
- * système (visible sur l'écran de verrouillage) : titre générique.
+ * Destination : stockage propre à l'app ([DownloadStore]).
  */
 class DownloadController(
-    private val context: Context,
     private val store: DownloadStore,
     private val originRules: Set<String>,
 ) {
     private val random = SecureRandom()
     private val blobTransfers = HashMap<String, BlobTransfer>()
-    private var receiverRegistered = false
 
     private class BlobTransfer(
         val suggestedName: String?,
@@ -48,31 +35,8 @@ class DownloadController(
         var mime: String = fallbackMime,
     )
 
-    private val completionReceiver =
-        object : BroadcastReceiver() {
-            override fun onReceive(
-                ctx: Context,
-                intent: Intent,
-            ) {
-                val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-                val (file, mime) = store.pending.remove(id) ?: return
-                onDownloadManagerFinished(id, file, mime)
-            }
-        }
-
     /** À appeler une fois la WebView créée : installe le canal de retour des téléchargements `blob:`. */
     fun attach(webView: WebView) {
-        if (!receiverRegistered) {
-            // Diffusion émise par le DownloadManager (une autre app) : exportée par nécessité ; seuls les
-            // identifiants connus de [DownloadStore.pending] sont traités.
-            ContextCompat.registerReceiver(
-                context,
-                completionReceiver,
-                IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-                ContextCompat.RECEIVER_EXPORTED,
-            )
-            receiverRegistered = true
-        }
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
             WebViewCompat.addWebMessageListener(webView, BRIDGE_NAME, originRules) { _, message, _, _, _ ->
                 onBridgeMessage(message)
@@ -86,10 +50,6 @@ class DownloadController(
     }
 
     fun detach() {
-        if (receiverRegistered) {
-            runCatching { context.unregisterReceiver(completionReceiver) }
-            receiverRegistered = false
-        }
         blobTransfers.values.forEach { abort(it) }
         blobTransfers.clear()
     }
@@ -104,71 +64,20 @@ class DownloadController(
     ) {
         val suggested = FileNames.fromContentDisposition(contentDisposition)
         when {
-            url.startsWith("https:", ignoreCase = true) ->
-                enqueue(url, userAgent ?: webView.settings.userAgentString, suggested, mimeType, webView.url)
+            url.startsWith("https:", ignoreCase = true) -> {
+                val name = buildName(suggested ?: FileNames.fromUrl(url), mimeType)
+                store.downloadHttps(
+                    url,
+                    name,
+                    effectiveMime(mimeType, File(name)),
+                    userAgent ?: webView.settings.userAgentString,
+                    webView.url,
+                )
+            }
             url.startsWith("data:", ignoreCase = true) -> saveDataUrl(url, suggested)
             url.startsWith("blob:", ignoreCase = true) -> fetchBlob(webView, url, suggested, mimeType)
             // http: (jamais en clair), file:, content: … : refusé.
             else -> store.emit(DownloadEvent.Failed(suggested ?: "document"))
-        }
-    }
-
-    private fun enqueue(
-        url: String,
-        userAgent: String,
-        suggested: String?,
-        mimeType: String?,
-        referer: String?,
-    ) {
-        val name = buildName(suggested ?: FileNames.fromUrl(url), mimeType)
-        val file = store.newDownloadFile(name)
-        if (file == null) {
-            store.emit(DownloadEvent.Failed(name))
-            return
-        }
-        val mime = effectiveMime(mimeType, file)
-        val request =
-            DownloadManager
-                .Request(url.toUri())
-                .setMimeType(mime)
-                .setTitle("Document Lexis Poly")
-                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
-                .setDestinationInExternalFilesDir(
-                    context,
-                    Environment.DIRECTORY_DOWNLOADS,
-                    file.name,
-                )
-        CookieManager.getInstance().getCookie(url)?.let { request.addRequestHeader("Cookie", it) }
-        request.addRequestHeader("User-Agent", userAgent)
-        if (referer != null && referer.startsWith("https:")) request.addRequestHeader("Referer", referer)
-        val dm = context.getSystemService(DownloadManager::class.java)
-        val id = runCatching { dm.enqueue(request) }.getOrNull()
-        if (id == null) {
-            store.emit(DownloadEvent.Failed(file.name))
-            return
-        }
-        store.pending[id] = file to mime
-        store.emit(DownloadEvent.Started(file.name))
-    }
-
-    private fun onDownloadManagerFinished(
-        id: Long,
-        file: File,
-        mime: String,
-    ) {
-        val dm = context.getSystemService(DownloadManager::class.java)
-        val ok =
-            dm.query(DownloadManager.Query().setFilterById(id))?.use { c ->
-                c.moveToFirst() &&
-                    c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) ==
-                    DownloadManager.STATUS_SUCCESSFUL
-            } ?: false
-        if (ok && file.exists() && file.length() > 0) {
-            store.emit(DownloadEvent.Completed(file, mime))
-        } else {
-            dm.remove(id)
-            file.delete()
-            store.emit(DownloadEvent.Failed(file.name))
         }
     }
 

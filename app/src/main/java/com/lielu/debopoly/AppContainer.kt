@@ -43,7 +43,7 @@ class AppContainer(
         )
 
     /** Documents téléchargés depuis Lexis Poly : stockage privé de l'app, jamais sauvegardé ni partagé. */
-    val downloadStore = DownloadStore(appContext)
+    val downloadStore = DownloadStore(appContext, applicationScope)
 
     /** Mise à jour de l'app depuis les releases GitHub de CE dépôt (bibliothèque lielugit-updater du modèle). */
     val updateManager =

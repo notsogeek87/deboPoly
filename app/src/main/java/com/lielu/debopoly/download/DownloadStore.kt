@@ -3,13 +3,20 @@ package com.lielu.debopoly.download
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
+import android.webkit.CookieManager
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
 import java.util.Locale
-import java.util.concurrent.ConcurrentHashMap
 
 /** Événement à afficher à l'utilisateur (snackbar). */
 sealed interface DownloadEvent {
@@ -36,6 +43,7 @@ sealed interface DownloadEvent {
  */
 class DownloadStore(
     context: Context,
+    private val applicationScope: CoroutineScope,
 ) {
     private val appContext = context.applicationContext
 
@@ -47,8 +55,7 @@ class DownloadStore(
 
     private val cameraDir: File get() = File(appContext.cacheDir, "camera").apply { mkdirs() }
 
-    /** Téléchargements DownloadManager en cours : identifiant → fichier de destination et type MIME. */
-    val pending = ConcurrentHashMap<Long, Pair<File, String>>()
+    private var httpsDownloads = SupervisorJob(applicationScope.coroutineContext.job)
 
     private val _events = MutableSharedFlow<DownloadEvent>(extraBufferCapacity = 16)
     val events: SharedFlow<DownloadEvent> = _events
@@ -61,6 +68,38 @@ class DownloadStore(
     fun newDownloadFile(name: String): File? {
         val dir = downloadsDir ?: return null
         return File(dir, FileNames.unique(name) { File(dir, it).exists() })
+    }
+
+    fun downloadHttps(
+        url: String,
+        name: String,
+        mime: String,
+        userAgent: String,
+        referer: String?,
+    ) {
+        applicationScope.launch(httpsDownloads + Dispatchers.Main.immediate) {
+            emit(DownloadEvent.Started(name))
+            var partial: File? = null
+            try {
+                val directory = downloadsDir ?: throw IOException("Stockage indisponible")
+                // Les fichiers partiels restent hors de la liste des documents.
+                val staging = File(directory, ".pending").apply { mkdirs() }
+                val temporary = File.createTempFile("download-", ".part", staging)
+                partial = temporary
+                withContext(Dispatchers.IO) {
+                    downloadHttpsFile(url, userAgent, referer, temporary, CookieManager.getInstance()::getCookie)
+                }
+                val file = newDownloadFile(name) ?: throw IOException("Stockage indisponible")
+                if (temporary.length() == 0L || !temporary.renameTo(file)) {
+                    throw IOException("Téléchargement incomplet")
+                }
+                emit(DownloadEvent.Completed(file, mime))
+            } catch (_: IOException) {
+                emit(DownloadEvent.Failed(name))
+            } finally {
+                partial?.delete()
+            }
+        }
     }
 
     fun listDownloads(): List<File> =
@@ -80,6 +119,8 @@ class DownloadStore(
 
     /** Supprime documents téléchargés et photos. */
     fun deleteAll() {
+        httpsDownloads.cancel()
+        httpsDownloads = SupervisorJob(applicationScope.coroutineContext.job)
         downloadsDir?.listFiles()?.forEach { it.deleteRecursively() }
         cameraDir.listFiles()?.forEach { it.deleteRecursively() }
     }

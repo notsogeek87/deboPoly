@@ -98,7 +98,7 @@ class MainActivity :
                     activity = this,
                     homeUrl = AppConfig.BASE_URL,
                     policy = policy,
-                    downloads = DownloadController(this, container.downloadStore, policy.originRules()),
+                    downloads = DownloadController(container.downloadStore, policy.originRules()),
                     state = browserState,
                     host = this,
                 ).also {
