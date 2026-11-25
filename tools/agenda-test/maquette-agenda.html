@@ -28,7 +28,9 @@ $("#scheduler").kendoScheduler({
     {title:"RDV client – Société X", start:at(0,14,0), end:at(0,15,0), ownerId:1},
     {title:"Expertise judiciaire", start:at(1,10,0), end:at(1,12,0), ownerId:1},
     {title:"Délai conclusions", start:at(2,0,0), end:at(2,0,0), isAllDay:true, ownerId:1},
-    {title:"Médiation", start:at(3,16,0), end:at(3,17,30), ownerId:1}
+    {title:"Médiation", start:at(3,16,0), end:at(3,17,30), ownerId:1},
+    // Piège : journée entière le lundi SUIVANT (ne doit pas apparaître dans la semaine courante).
+    {title:"Journée lundi suivant", start:at(7-(d.getDay()+6)%7,0,0), end:at(7-(d.getDay()+6)%7,0,0), isAllDay:true, ownerId:1}
   ]
 });
 </script></body></html>

@@ -1,8 +1,8 @@
 // Test du script agenda (app/src/main/res/raw/agenda_mobile.js) sur une maquette Kendo UI Scheduler (fr-FR,
 // groupée par collaborateur, ouverte volontairement sur J+3).
 // Usage : node tools/agenda-test/test-agenda.js   (Playwright + Chromium ; Kendo chargé depuis son CDN)
-// Vérifie : portrait → vue « agenda » standard ouverte sur aujourd'hui, plein écran SOUS le menu du site ;
-// flèches = ± 1 semaine, période visible, bouton Retour ; bouton Filtres ↔ Agenda ; paysage → vue d'origine ; retour portrait → agenda.
+// Vérifie : portrait → vue « agenda » standard sur la semaine en cours (lundi → dimanche), plein écran SOUS le menu du site ;
+// flèches = ± 1 semaine, « Semaine du … » visible, bouton Retour ; bouton Filtres ↔ Agenda ; paysage → vue d'origine ; retour portrait → agenda.
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -33,7 +33,7 @@ const shots = process.argv[2];
     const t = new Date();
     return {
       view: s.view().name,
-      start: s.view().startDate().toDateString() === t.toDateString(),
+      start: true,
       tasks: document.querySelectorAll('.k-scheduler-content .k-task').length,
       fixed: getComputedStyle(el).position === 'fixed',
       top: Math.round(r.top),
@@ -43,6 +43,7 @@ const shots = process.argv[2];
       back: !!document.getElementById('lp-agenda-back'),
       period: ((document.querySelector('.k-nav-current .k-sm-date-format') || {}).textContent || '').trim(),
       periodVisible: !!(document.querySelector('.k-nav-current .k-sm-date-format') || {}).offsetWidth,
+      titles: [...document.querySelectorAll('.k-scheduler-content .k-task')].filter(e => e.offsetParent).map(e => e.textContent.trim()),
       offset: Math.round((new Date(s.view().startDate()).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 864e5),
     };
   });
@@ -71,12 +72,15 @@ const shots = process.argv[2];
   await browser.close();
   console.log(JSON.stringify(r, null, 1), errors);
 
+  const mondayOffset = (new Date().getDay() + 6) % 7;
   const ok =
     errors.length === 0 &&
     r.portrait.view === 'agenda' && r.portrait.start && r.portrait.fixed && r.portrait.menuVisible &&
     r.portrait.width === 412 && r.portrait.tasks >= 2 && r.portrait.button === 'Filtres' &&
-    r.portrait.back && r.portrait.periodVisible && r.portrait.period.length > 0 &&
-    r.nextWeek.offset === 7 && r.prevWeek.offset === 0 &&
+    r.portrait.back && r.portrait.periodVisible && /^Semaine du /.test(r.portrait.period) &&
+    r.portrait.offset === -mondayOffset && r.nextWeek.offset === 7 - mondayOffset &&
+    r.prevWeek.offset === -mondayOffset && /^Semaine du /.test(r.nextWeek.period) &&
+    !r.portrait.titles.some((x) => /lundi suivant/.test(x)) &&
     !r.filters.fixed && r.filters.button === 'Agenda' &&
     r.back.fixed && r.back.menuVisible &&
     r.landscape.view === 'week' && !r.landscape.fixed &&

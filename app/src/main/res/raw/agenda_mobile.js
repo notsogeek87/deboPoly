@@ -6,7 +6,8 @@
  * - vue « agenda » STANDARD de Kendo (liste des rendez-vous, regroupés par jour), ouverte sur aujourd'hui ;
  * - l'agenda occupe l'écran SOUS le menu du site (qui reste visible), par-dessus le panneau de filtres ;
  *   un bouton « Filtres » rend la page normale, « Agenda » y revient.
- * Flèches : une semaine entière en vue liste ; période affichée dans la barre ; bouton « Retour ».
+ * Liste = semaine du lundi au dimanche (« Semaine du … au … » dans la barre), flèches = semaine précédente /
+ * suivante ; bouton « Retour ».
  * En paysage ou en version ordinateur, la vue d'origine revient. Tout se passe dans le navigateur : aucune
  * requête ajoutée ni modifiée.
  *
@@ -102,6 +103,49 @@
     return Math.max(0, Math.min(Math.round(top), Math.round(window.innerHeight * 0.5)));
   }
 
+  function addDays(d, n) {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  }
+
+  function monday(d) {
+    return addDays(d, -((d.getDay() + 6) % 7));
+  }
+
+  function fmt(d, pattern) {
+    try {
+      if (window.kendo && window.kendo.toString) return window.kendo.toString(d, pattern);
+    } catch (e) {}
+    return d.toLocaleDateString("fr-FR");
+  }
+
+  // « Semaine du 23 au 29 novembre 2026 » / « du 30 novembre au 6 décembre 2026 » / années différentes.
+  function weekTitle(s) {
+    var v = s.view();
+    if (!v || v.name !== "agenda" || !narrow()) return;
+    var a = monday(v.startDate()), b = addDays(a, 6);
+    var text;
+    if (a.getFullYear() !== b.getFullYear()) text = fmt(a, "d MMMM yyyy") + " au " + fmt(b, "d MMMM yyyy");
+    else if (a.getMonth() !== b.getMonth()) text = fmt(a, "d MMMM") + " au " + fmt(b, "d MMMM yyyy");
+    else text = a.getDate() + " au " + fmt(b, "d MMMM yyyy");
+    var spans = s.element[0].querySelectorAll(".k-nav-current .k-sm-date-format, .k-nav-current .k-lg-date-format");
+    for (var i = 0; i < spans.length; i++) spans[i].textContent = "Semaine du " + text;
+  }
+
+  // La vue liste de Kendo va jusqu'au lundi suivant 00:00 inclus : les rendez-vous « journée entière » de ce
+  // lundi-là apparaîtraient dans la semaine. On masque les lignes qui commencent après le dimanche.
+  function hideNextMonday(s) {
+    var v = s.view();
+    if (!v || v.name !== "agenda" || typeof s.occurrenceByUid !== "function") return;
+    var end = addDays(monday(v.startDate()), 7);
+    var tasks = s.element[0].querySelectorAll(".k-scheduler-content .k-task[data-uid]");
+    for (var i = 0; i < tasks.length; i++) {
+      var ev = null;
+      try { ev = s.occurrenceByUid(tasks[i].getAttribute("data-uid")); } catch (e) {}
+      var row = tasks[i].closest("tr");
+      if (ev && ev.start && row && ev.start >= end) row.style.display = "none";
+    }
+  }
+
   function setLayout(isNarrow, s) {
     var root = document.documentElement;
     root.classList.toggle("lp-agenda-narrow", isNarrow);
@@ -149,29 +193,41 @@
     if (!s || !s.view() || !s.views) return false;
     if (!s.__lpNav) {
       s.__lpNav = true;
-      // La vue liste montre 7 jours mais ses flèches n'avancent que d'un jour (fenêtre glissante, déroutant) :
-      // en vue liste, les flèches avancent d'une semaine entière. Événement standard de Kendo.
+      // En vue liste : toujours une semaine du lundi au dimanche. Flèches = semaine précédente / suivante,
+      // « Aujourd'hui » et le mini-calendrier = semaine de la date choisie. Événement standard `navigate`.
       s.bind("navigate", function (e) {
-        if (!e || (e.action !== "next" && e.action !== "previous")) return;
-        if (!s.view() || s.view().name !== "agenda") return;
+        if (!e || !s.view() || s.view().name !== "agenda") return;
+        var target;
+        var start = monday(s.view().startDate());
+        if (e.action === "next") target = addDays(start, 7);
+        else if (e.action === "previous") target = addDays(start, -7);
+        else if (e.action === "today") target = monday(new Date());
+        else if (e.action === "changeDate" && e.date) target = monday(e.date);
+        else return;
         e.preventDefault();
-        var start = s.view().startDate();
-        var target = new Date(start.getFullYear(), start.getMonth(), start.getDate() + (e.action === "next" ? 7 : -7));
         setTimeout(function () { s.date(target); }, 0);
+      });
+      // Titre « Semaine du … au … » dans la barre de l'agenda, après chaque affichage.
+      s.bind("dataBound", function () {
+        weekTitle(s);
+        hideNextMonday(s);
       });
     }
     var current = s.view().name;
     var isNarrow = narrow();
     setLayout(isNarrow, s);
     if (isNarrow) {
-      if (current === "agenda" || (current === "day" && s.__lpFallback)) return true;
+      if (current === "agenda" || (current === "day" && s.__lpFallback)) {
+        weekTitle(s);
+        return true;
+      }
       if (!s.__lpOriginal) {
         s.__lpOriginal = { name: current, index: Object.keys(s.views).indexOf(current) };
       }
       // Ouverture sur aujourd'hui (une seule fois : ensuite, l'utilisateur navigue librement).
       if (!s.__lpToday) {
         s.__lpToday = true;
-        try { s.date(new Date()); } catch (e) {}
+        try { s.date(monday(new Date())); } catch (e) {}
       }
       try {
         if (ensureAgendaView(s)) {
