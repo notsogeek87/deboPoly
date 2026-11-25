@@ -129,6 +129,14 @@ fun SettingsScreen(
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
             SectionTitle("Affichage du site")
             SwitchRow(
+                title = "Agenda en liste sur téléphone",
+                subtitle =
+                    "En portrait, l'agenda s'affiche en liste des rendez-vous, en plein écran. Le bouton " +
+                        "« Filtres » ramène la page normale ; en paysage, la vue habituelle revient.",
+                checked = settings.agendaMobile,
+                onCheckedChange = viewModel::setAgendaMobile,
+            )
+            SwitchRow(
                 title = "Version ordinateur",
                 subtitle =
                     "Affiche le site comme sur un ordinateur (pages larges, zoom au pincement). Utile pour les " +

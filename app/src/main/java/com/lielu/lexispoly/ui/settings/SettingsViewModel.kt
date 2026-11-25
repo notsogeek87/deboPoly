@@ -51,6 +51,8 @@ class SettingsViewModel(
 
     fun setDesktopMode(enabled: Boolean) = launch { settingsRepository.setDesktopMode(enabled) }
 
+    fun setAgendaMobile(enabled: Boolean) = launch { settingsRepository.setAgendaMobile(enabled) }
+
     fun onCheckUpdateRequested() {
         viewModelScope.launch { runCatching { updateManager.checkForUpdate(force = true) } }
     }

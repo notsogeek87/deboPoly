@@ -34,6 +34,7 @@ import androidx.webkit.UserAgentMetadata
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import com.lielu.lexispoly.R
 import com.lielu.lexispoly.data.settings.AppSettings
 import com.lielu.lexispoly.download.DownloadController
 import java.net.URI
@@ -75,6 +76,7 @@ class BrowserController(
     private var clearHistoryOnNextFinish = false
     private var popup: Dialog? = null
     private var desktopScript: ScriptHandler? = null
+    private var agendaScript: ScriptHandler? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     init {
@@ -136,10 +138,15 @@ class BrowserController(
         appliedSettings = settings
         applyUserSettings(webView, settings)
         updateDesktopScript(settings.desktopMode)
-        val uaChanged =
+        updateAgendaScript(settings.agendaMobile)
+        val needsReload =
             previous != null &&
-                (previous.chromeUserAgent != settings.chromeUserAgent || previous.desktopMode != settings.desktopMode)
-        if (uaChanged && webView.url != null) webView.reload()
+                (
+                    previous.chromeUserAgent != settings.chromeUserAgent ||
+                        previous.desktopMode != settings.desktopMode ||
+                        (previous.agendaMobile != settings.agendaMobile && isAgendaPage(webView.url))
+                )
+        if (needsReload && webView.url != null) webView.reload()
     }
 
     private fun applyUserSettings(
@@ -191,6 +198,27 @@ class BrowserController(
             desktopScript = null
         }
     }
+
+    /**
+     * Agenda lisible sur téléphone : script `res/raw/agenda_mobile.js`, actif seulement sur les pages /Agenda/
+     * des domaines autorisés. Il ne fait que changer la vue du calendrier côté navigateur.
+     */
+    private fun updateAgendaScript(enabled: Boolean) {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+        if (enabled && agendaScript == null) {
+            val source =
+                activity.resources
+                    .openRawResource(R.raw.agenda_mobile)
+                    .bufferedReader()
+                    .use { it.readText() }
+            agendaScript = WebViewCompat.addDocumentStartJavaScript(webView, source, policy.originRules())
+        } else if (!enabled) {
+            agendaScript?.remove()
+            agendaScript = null
+        }
+    }
+
+    private fun isAgendaPage(url: String?): Boolean = url?.contains("/Agenda/", ignoreCase = true) == true
 
     /** Premier affichage : état restauré (mort du processus) s'il existe, sinon la page de connexion. */
     fun start(savedState: Bundle?) {

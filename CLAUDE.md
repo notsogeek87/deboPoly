@@ -70,6 +70,9 @@ Package `com.lielu.lexispoly`. DI manuelle (`AppContainer`), Compose pour l'inte
 - `web/` — `BrowserController` (possède la WebView : réglages, clients, popups SSO, erreurs, effacement),
   `UrlPolicy` (liste blanche, décisions de navigation, testée), `UserAgents`, `LexisWebView` +
   `WebSwipeRefreshLayout` (tirer pour actualiser seulement sur dépassement en haut), `ExternalLinks`.
+  `res/raw/agenda_mobile.js` : agenda (Kendo UI Scheduler) en vue liste plein écran en portrait, injecté sur
+  les pages `/Agenda/` ; bascule de vue via l'API interne Kendo `_views()` si la vue « agenda » n'est pas
+  configurée (repli sur la vue « jour »). Test : `node tools/agenda-test/test-agenda.js` (maquette Kendo + Playwright).
 - `download/` — `DownloadController` (DownloadManager + cookies ; `data:` ; `blob:` via
   `addWebMessageListener`), `DownloadStore` (espace privé, FileProvider), `FileNames`, `DataUrl`, `FileOpener`.
 - `security/` — `AppLock` (état de verrouillage du processus, testé), `BiometricGate` (BiometricPrompt).

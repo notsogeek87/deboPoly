@@ -10,6 +10,8 @@ data class AppSettings(
     val lockTimeoutMinutes: Int = AppConfig.DEFAULT_LOCK_TIMEOUT_MINUTES,
     /** `true` : user-agent de Chrome mobile (sans « ; wv »). `false` : user-agent WebView d'origine. */
     val chromeUserAgent: Boolean = true,
+    /** Agenda en liste plein écran en portrait (vue « agenda » du calendrier Kendo de Lexis Poly). */
+    val agendaMobile: Boolean = true,
     /** Version ordinateur : user-agent de bureau et page large (1280 px), zoomable. */
     val desktopMode: Boolean = false,
     /** Assombrissement automatique des pages qui n'ont pas de thème sombre (mode sombre du système). */
@@ -28,4 +30,6 @@ interface SettingsRepository {
     suspend fun setAlgorithmicDarkening(enabled: Boolean)
 
     suspend fun setDesktopMode(enabled: Boolean)
+
+    suspend fun setAgendaMobile(enabled: Boolean)
 }
