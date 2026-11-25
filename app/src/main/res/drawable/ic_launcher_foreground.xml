@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icône neutre (aucun élément de la marque LexisNexis) : un document plié avec des lignes de texte. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Feuille, coin supérieur droit plié. -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,30 h22 l12,12 v34 a2,2 0 0 1 -2,2 h-32 a2,2 0 0 1 -2,-2 v-44 a2,2 0 0 1 2,-2 z" />
+    <path
+        android:fillColor="#B8C4D9"
+        android:pathData="M60,30 l12,12 h-10 a2,2 0 0 1 -2,-2 z" />
+    <!-- Lignes de texte. -->
+    <path
+        android:fillColor="#1F3A5F"
+        android:pathData="M42,48 h24 v3 h-24 z M42,55 h24 v3 h-24 z M42,62 h24 v3 h-24 z M42,69 h14 v3 h-14 z" />
+</vector>

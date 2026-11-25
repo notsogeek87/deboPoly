@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Afficher Lexis Poly ; consulter les releases GitHub du dépôt pour la mise à jour intégrée. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Distinguer « hors ligne » de « page indisponible », et recharger au retour du réseau. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- BiometricPrompt. -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!-- Pas de permission CAMERA : la photo est prise par l'app Appareil photo (ACTION_IMAGE_CAPTURE). -->
+
+    <queries>
+        <!-- Applis Appareil photo à qui accorder l'écriture de la photo jointe. -->
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+    </queries>
+
+    <!--
+        allowBackup="false" + règles d'extraction vides : ni sauvegarde cloud, ni transfert d'appareil à
+        appareil, ni adb backup. Les cookies de session et les documents ne quittent jamais l'appareil.
+    -->
+    <application
+        android:name=".LieluApplication"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.LieluApp"
+        android:usesCleartextTraffic="false">
+
+        <!-- Refuse l'envoi à Google des métriques d'usage de la WebView (aucune télémétrie). -->
+        <meta-data
+            android:name="android.webkit.WebView.MetricsOptOut"
+            android:value="true" />
+
+        <!--
+            configChanges : rotation, pliage/dépliage (taille d'écran, densité), multi-fenêtre, clavier physique,
+            clair/sombre. L'activité n'est pas recréée : pas de rechargement, saisie en cours conservée.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|keyboard|keyboardHidden|navigation|uiMode|locale|layoutDirection|fontScale|colorMode|touchscreen"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:resizeableActivity="true"
+            android:theme="@style/Theme.LieluApp"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ui.settings.SettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.LieluApp" />
+
+        <!-- Partage ponctuel (lecture seule) d'un document téléchargé ou d'une photo à joindre. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+
+</manifest>
