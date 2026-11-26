@@ -23,13 +23,13 @@ const shots = process.argv[2];
   p.on('pageerror', (e) => errors.push(e.message));
   const state = () => p.evaluate(() => {
     const vw = document.documentElement.clientWidth;
-    const cut = [...document.querySelectorAll('.logo,.search,.user,.nav li,.icons span')]
-      .filter((e) => { const r = e.getBoundingClientRect(); const ul = e.closest('ul');
-        if (ul && /auto|scroll/.test(getComputedStyle(ul).overflowX)) return false; // menu défilable
-        const lim = ul ? ul.getBoundingClientRect().right : vw; return r.left < 0 || r.right > Math.min(vw, lim) + 0.5; })
+    // Coupé : dépasse de l'écran, ou recouvert (point au bord droit qui tombe sur un autre élément).
+    const cut = [...document.querySelectorAll('.logo,.search,.user,.menu a,.icons span')]
+      .filter((e) => { const r = e.getBoundingClientRect(); if (r.left < 0 || r.right > vw + 0.5) return true;
+        const h = document.elementFromPoint(r.right - 2, r.top + r.height / 2); return !!h && !e.contains(h) && !h.contains(e); })
       .map((e) => e.textContent.trim());
-    const ul = document.querySelector('.nav ul');
-    return { menuScroll: getComputedStyle(ul).overflowX, viewport: document.querySelector('meta[name=viewport]').content, width: vw, cut };
+    const ul = document.querySelector(".menu");
+    return { menuPadding: getComputedStyle(document.querySelector('.menu a')).paddingRight, viewport: document.querySelector('meta[name=viewport]').content, width: vw, cut };
   });
   await p.goto('https://www.lexispoly.fr/lexispoly/');
 
@@ -42,7 +42,7 @@ const shots = process.argv[2];
   await browser.close();
   console.log(JSON.stringify({ portrait, landscape }, null, 1), errors);
   const ok = errors.length === 0 && portrait.cut.length === 0 && portrait.width > 412 &&
-    portrait.width <= 600 && landscape.viewport === 'initial-scale=1.0';
+    portrait.width <= 600 && landscape.viewport === 'width=device-width,initial-scale=1.0' && landscape.menuPadding === '12px';
   console.log(ok ? 'OK' : 'ÉCHEC');
   process.exit(ok ? 0 : 1);
 })();

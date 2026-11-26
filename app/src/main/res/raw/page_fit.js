@@ -17,6 +17,7 @@
   var HEADER = 260; // hauteur (px CSS) de la zone mesurée : en-tête + menu du site
   var original = null; // contenu d'origine de la balise viewport
   var width = 0; // largeur imposée (0 = aucune)
+  var touched = []; // éléments dont on a changé le style (remis à l'origine à chaque rotation)
 
   function meta() {
     var m = document.querySelector("meta[name=viewport]");
@@ -55,12 +56,25 @@
     return null;
   }
 
+  // Partie d'un lien recouverte par un autre élément (menu Lexis Poly : dernières entrées sous les icônes
+  // chrono / dossier, posées par-dessus). Renvoie la largeur recouverte, ou 0.
+  function covered(el, r, vw) {
+    if (el.tagName !== "A" || !document.elementFromPoint) return 0;
+    var y = r.top + r.height / 2;
+    var x = Math.min(r.right, vw) - 2;
+    if (y < 0 || y >= window.innerHeight || x <= r.left) return 0;
+    var hit = document.elementFromPoint(x, y);
+    if (!hit || hit === el || el.contains(hit) || hit.contains(el)) return 0;
+    var left = hit.getBoundingClientRect().left;
+    return left > r.left ? r.right - left : 0;
+  }
+
   // Débordement horizontal de l'en-tête : éléments du haut de la page qui dépassent du bord gauche ou droit de
-  // l'écran, ou du bloc qui les coupe. Les panneaux repliés entièrement hors écran sont ignorés.
+  // l'écran, du bloc qui les coupe ou de ce qui les recouvre. Les panneaux repliés entièrement hors écran sont ignorés.
   function overflow() {
     var vw = document.documentElement.clientWidth || window.innerWidth;
     var sy = window.scrollY || 0;
-    var left = 0, right = 0, clippers = [];
+    var left = 0, right = 0, clippers = [], menus = [];
     var els = document.body ? document.body.querySelectorAll("*") : [];
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
@@ -70,13 +84,39 @@
       if (r.top + sy > HEADER || r.bottom + sy < 0) continue;
       if (r.right <= 0 || r.left >= vw) continue;
       var clip = clipRight(el, r);
-      if (r.left >= 0 && r.right <= vw && !clip) continue;
+      var cover = covered(el, r, vw);
+      if (r.left >= 0 && r.right <= vw && !clip && cover <= 0.5) continue;
       if (hidden(el)) continue;
       left = Math.max(left, -r.left);
-      right = Math.max(right, r.right - vw, clip ? clip.amount : 0);
+      right = Math.max(right, r.right - vw, clip ? clip.amount : 0, cover);
       if (clip && clippers.indexOf(clip.el) < 0) clippers.push(clip.el);
+      if (cover > 0.5 && el.parentElement) menus.push({ el: el.parentElement, amount: cover });
     }
-    return { extra: Math.ceil(left + right), clippers: clippers };
+    return { extra: Math.ceil(left + right), clippers: clippers, menus: menus };
+  }
+
+  // Menu dont les dernières entrées restent recouvertes au plafond : on réduit l'espace autour des entrées
+  // (marges intérieures gauche / droite des liens), juste de quoi tout montrer, sans descendre sous 6 px.
+  function tighten(menus) {
+    var need = new Map();
+    menus.forEach(function (m) { need.set(m.el, Math.max(need.get(m.el) || 0, m.amount)); });
+    need.forEach(function (amount, menu) {
+      var links = [], spare = 0;
+      for (var i = 0; i < menu.children.length; i++) {
+        var a = menu.children[i];
+        var cs = getComputedStyle(a);
+        var pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0;
+        links.push({ a: a, pl: pl, pr: pr });
+        spare += Math.max(0, pl - 6) + Math.max(0, pr - 6);
+      }
+      if (spare <= 0) return;
+      var ratio = Math.min(1, (amount + 4) / spare);
+      links.forEach(function (l) {
+        touched.push(l.a);
+        l.a.style.setProperty("padding-left", (l.pl - Math.max(0, l.pl - 6) * ratio) + "px", "important");
+        l.a.style.setProperty("padding-right", (l.pr - Math.max(0, l.pr - 6) * ratio) + "px", "important");
+      });
+    });
   }
 
   function apply(w) {
@@ -102,7 +142,11 @@
       apply(width);
     } else if (current >= MAX_WIDTH) {
       // Plafond atteint et menu encore coupé : il devient défilable du doigt (glisser vers la gauche).
-      o.clippers.forEach(function (c) { c.style.setProperty("overflow-x", "auto", "important"); });
+      o.clippers.forEach(function (c) {
+        touched.push(c);
+        c.style.setProperty("overflow-x", "auto", "important");
+      });
+      tighten(o.menus);
     }
   }
 
@@ -121,6 +165,10 @@
     // Rotation : on repart de la mise en page d'origine, puis on remesure.
     width = 0;
     apply(0);
+    touched.forEach(function (el) {
+      ["overflow-x", "padding-left", "padding-right"].forEach(function (k) { el.style.removeProperty(k); });
+    });
+    touched = [];
     schedule();
   });
   lastDevice = deviceWidth();

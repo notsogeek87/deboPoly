@@ -79,9 +79,11 @@ Package `com.lielu.debopoly`. DI manuelle (`AppContainer`), Compose pour l'inter
   la vue via l'API interne `_views()` si absente (repli : vue « jour »). Ne PAS dériver de vue Kendo maison :
   essayé en v1.0.14, aucune donnée affichée sur le vrai site.
   Test : `node tools/agenda-test/test-agenda.js` (maquette Kendo fr-FR + Playwright).
-  Menu du site repéré par ses entrées (Données, Agenda, Tâches, Finances, Analyses) pour placer l'agenda dessous.
+  Agenda placé sous l'en-tête FIXE du site `header#rootHeader` (relevé sur le vrai site), repli : menu repéré par
+  ses entrées (Données, Agenda, Tâches…).
   `res/raw/page_fit.js` (hors version ordinateur) : si l'en-tête du site déborde de l'écran, page élargie juste
-  assez (viewport, 600 px max) et dézoomée ; au plafond, menu coupé rendu défilable. Test :
+  assez (viewport, 600 px max) et dézoomée ; débordement = hors écran, coupé par un parent, ou lien RECOUVERT (les
+  icônes chrono/dossier passent sur les dernières entrées du menu) ; au plafond, marges des entrées resserrées. Test :
   `node tools/page-fit-test/test-page-fit.js`.
 - `download/` — `DownloadController` (`https:`, `data:`, `blob:` via `addWebMessageListener`),
   `HttpsDownload` (redirections et en-têtes de session), `DownloadStore` (espace privé, FileProvider),

@@ -116,9 +116,15 @@
     return best ? best.bottom : 0;
   }
 
-  // Haut de la zone plein écran : juste sous le menu du site (repéré par ses entrées), sinon le plus haut
+  // Haut de la zone plein écran : sous l'en-tête fixe du site, sinon sous le menu (repéré par ses entrées), sinon le plus haut
   // conteneur large de l'agenda qui commence sous l'en-tête. Mesuré page remontée tout en haut.
   function agendaTop(s) {
+    // En-tête fixe de Lexis Poly (logo, recherche, menu) : relevé sur le vrai site, `header#rootHeader`.
+    var header = document.getElementById("rootHeader");
+    if (header && /fixed|sticky/.test(getComputedStyle(header).position)) {
+      var hr = header.getBoundingClientRect();
+      if (hr.height > 0 && hr.bottom > 0) return Math.round(Math.min(hr.bottom, window.innerHeight * 0.5));
+    }
     var menu = menuBottom(s);
     if (menu > 0) return Math.round(Math.min(menu, window.innerHeight * 0.5));
     var top = 0;

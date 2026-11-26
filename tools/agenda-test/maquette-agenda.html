@@ -11,10 +11,14 @@
 .band{height:40px;background:#eef4fb}.wrap{display:flex;margin:20px 8px;border:2px solid #7b3fa0;position:relative}
 .side{width:45%;flex:none;border-right:1px solid #ccc;padding:8px}.main{flex:1;min-width:0}</style>
 </head><body>
+<!-- Structure relevée sur le vrai site : en-tête FIXE header#rootHeader (175 px), contenu main#rootMain dessous. -->
+<header id="rootHeader" style="position:fixed;top:0;left:0;right:0;height:175px;background:#fff;z-index:10">
 <div class="top">PolyOffice (maquette)</div>
-<div class="nav"><span>⌂</span><span>DONNÉES</span><b>AGENDA</b><span>TÂCHES</span></div><div class="band"></div>
+<div class="nav"><span>⌂</span><span>DONNÉES</span><b>AGENDA</b><span>TÂCHES</span><span>FINANCES</span></div><div class="band"></div>
+</header>
+<main id="rootMain" style="position:relative;padding-top:175px">
 <div class="wrap"><div class="side"><div class="agendaFilterWrapper">Filtres : Me Martin<br><br>Tous codes<br><br>Amplitude 08:00 – 19:00<br><br><button>Appliquer</button></div></div>
-<div class="main"><div id="scheduler"></div></div></div>
+<div class="main"><div id="scheduler"></div></div></div></main>
 <script>
 var d = new Date(); d.setHours(0,0,0,0); var day = 864e5;
 function at(o,h,m){return new Date(d.getTime()+o*day+(h*60+m)*6e4);}
