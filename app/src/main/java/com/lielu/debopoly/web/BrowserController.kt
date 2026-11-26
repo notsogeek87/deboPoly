@@ -77,6 +77,7 @@ class BrowserController(
     private var popup: Dialog? = null
     private var desktopScript: ScriptHandler? = null
     private var agendaScript: ScriptHandler? = null
+    private var fitScript: ScriptHandler? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     init {
@@ -186,6 +187,7 @@ class BrowserController(
 
     private fun updateDesktopScript(enabled: Boolean) {
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+        updateFitScript(!enabled)
         if (enabled && desktopScript == null) {
             desktopScript =
                 WebViewCompat.addDocumentStartJavaScript(
@@ -200,18 +202,33 @@ class BrowserController(
     }
 
     /**
+     * Pages entières sur téléphone (hors version ordinateur) : script `res/raw/page_fit.js`, qui élargit la page
+     * juste assez pour que l'en-tête du site ne soit plus coupé (la WebView la dézoome pour qu'elle tienne).
+     */
+    private fun updateFitScript(enabled: Boolean) {
+        if (enabled && fitScript == null) {
+            fitScript = WebViewCompat.addDocumentStartJavaScript(webView, rawText(R.raw.page_fit), policy.originRules())
+        } else if (!enabled) {
+            fitScript?.remove()
+            fitScript = null
+        }
+    }
+
+    private fun rawText(id: Int): String =
+        activity.resources
+            .openRawResource(id)
+            .bufferedReader()
+            .use { it.readText() }
+
+    /**
      * Agenda lisible sur téléphone : script `res/raw/agenda_mobile.js`, actif seulement sur les pages /Agenda/
      * des domaines autorisés. Il ne fait que changer la vue du calendrier côté navigateur.
      */
     private fun updateAgendaScript(enabled: Boolean) {
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
         if (enabled && agendaScript == null) {
-            val source =
-                activity.resources
-                    .openRawResource(R.raw.agenda_mobile)
-                    .bufferedReader()
-                    .use { it.readText() }
-            agendaScript = WebViewCompat.addDocumentStartJavaScript(webView, source, policy.originRules())
+            agendaScript =
+                WebViewCompat.addDocumentStartJavaScript(webView, rawText(R.raw.agenda_mobile), policy.originRules())
         } else if (!enabled) {
             agendaScript?.remove()
             agendaScript = null

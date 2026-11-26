@@ -90,9 +90,37 @@
     return hasView(s, "agenda");
   }
 
-  // Haut de la zone plein écran : juste sous le menu du site. On prend le plus haut conteneur large de
-  // l'agenda qui commence sous l'en-tête (le bloc de la page agenda), mesuré page remontée tout en haut.
+  function plain(t) {
+    return (t || "").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  }
+
+  // Menu du site (Données, Agenda, Tâches, Finances…) : le plus petit bloc visible du haut de la page qui
+  // contient au moins trois de ces entrées. Renvoie son bas (page remontée tout en haut), ou 0.
+  var MENU_WORDS = ["DONNEES", "AGENDA", "TACHES", "FINANCES", "ANALYSES"];
+  function menuBottom(s) {
+    var best = null, bestArea = Infinity;
+    var els = document.body ? document.body.querySelectorAll("nav, header, ul, div, table, tr") : [];
+    var limit = window.innerHeight * 0.5;
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (s && s.element && el.contains(s.element[0])) continue;
+      var r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0 || r.height > 200 || r.top > limit || r.bottom <= 0) continue;
+      var text = plain(el.textContent);
+      var n = 0;
+      for (var k = 0; k < MENU_WORDS.length; k++) if (text.indexOf(MENU_WORDS[k]) >= 0) n++;
+      if (n < 3) continue;
+      var area = r.width * r.height;
+      if (area < bestArea) { best = r; bestArea = area; }
+    }
+    return best ? best.bottom : 0;
+  }
+
+  // Haut de la zone plein écran : juste sous le menu du site (repéré par ses entrées), sinon le plus haut
+  // conteneur large de l'agenda qui commence sous l'en-tête. Mesuré page remontée tout en haut.
   function agendaTop(s) {
+    var menu = menuBottom(s);
+    if (menu > 0) return Math.round(Math.min(menu, window.innerHeight * 0.5));
     var top = 0;
     var el = s.element && s.element[0];
     while (el && el.parentElement && el.parentElement !== document.body) {
@@ -149,7 +177,7 @@
   function setLayout(isNarrow, s) {
     var root = document.documentElement;
     root.classList.toggle("lp-agenda-narrow", isNarrow);
-    if (isNarrow && full && s && !root.classList.contains("lp-agenda-full")) {
+    if (isNarrow && full && s) {
       window.scrollTo(0, 0);
       root.style.setProperty("--lp-agenda-top", agendaTop(s) + "px");
     }
@@ -255,7 +283,13 @@
   document.addEventListener("DOMContentLoaded", addCss);
   window.addEventListener("load", addCss);
   var tries = 0;
-  var timer = setInterval(function () { if (adapt() || ++tries > 120) clearInterval(timer); }, 500);
+  var timer = setInterval(function () {
+    if (adapt() || ++tries > 120) {
+      clearInterval(timer);
+      // Le menu et l'en-tête du site peuvent finir de s'afficher (ou être dézoomés) après l'agenda.
+      [1000, 3000, 6000].forEach(function (t) { setTimeout(adapt, t); });
+    }
+  }, 500);
   var resizeTimer = null;
   window.addEventListener("resize", function () {
     clearTimeout(resizeTimer);
